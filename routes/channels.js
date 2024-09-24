@@ -29,17 +29,17 @@ router
         // 아이디 스캔 = req.body.artistId
         // 채널 뿌리기 = db.forEach
 
-        let channels = []
+        let songs = []
         let {artistId} = req.body
 
         if (db.size && artistId) {
             db.forEach(function (value) {
                 if (value.artistId === artistId) {
-                    channels.push(value)
+                    songs.push(value)
                 }
             })
-            if (channels.length) {
-                res.status(200).json(channels)
+            if (songs.length) {
+                res.status(200).json(songs)
             } else {
                 channelNotFound(res)
             }
@@ -54,19 +54,19 @@ router
         //     return Object.keys(obj).length === 0;
         // }
 
-        let channelName = req.body.channelName
+        let title = req.body.title
         let artistId = req.body.artistId
 
         // 채널 명이 안맞으면 404
         // 채널 명이 맞고 유저 이름이 안맞으면 404
         // 채널 명이 맞고 유저 이름이 맞으면 200
 
-        if (!channelName || !artistId) {
+        if (!title || !artistId) {
             res.status(404).send('Please check if the Channel Name or User ID is empty.')
         } else {
             db.set(id++, req.body)
             res.status(200).json({
-                message: `${artistId}'s ${channelName} are successfully created!`
+                message: `${artistId}'s ${title} are successfully created!`
             })
         }
     })
@@ -81,22 +81,22 @@ router
         let {id} = req.params
         id = parseInt(id)
 
-        let channelData = db.get(id)
-        let oldChannelName = channelData.channelName
-        let newChannelName = req.body.channelName
+        let titleData = db.get(id)
+        let oldTitleName = titleData.title
+        let newTitleName = req.body.title
 
-        if (!channelData) {
+        if (!titleData) {
             channelNotFound(res)
         } else {
-            if (!newChannelName) {
+            if (!newTitleName) {
                 res.status(404).send('Please check if the Channel Name is empty.')
             } else {
 
-                channelData.channelName = newChannelName
-                db.set(id, channelData)
+                titleData.channelName = newTitleName
+                db.set(id, titleData)
 
                 res.status(200).json({
-                    message: `The channel name has been changed from ${oldChannelName} to ${newChannelName}.`
+                    message: `The channel name has been changed from ${oldTitleName} to ${newTitleName}.`
                 })
             }
         }
@@ -109,14 +109,14 @@ router
         let {id} = req.params
         id = parseInt(id)
 
-        let channelData = db.get(id)
+        let titleData = db.get(id)
 
-        if (!channelData) {
+        if (!titleData) {
             channelNotFound(res)
         } else {
             db.delete(id)
             res.status(200).json({
-                message: `${channelData.channelName} are successfully deleted!`
+                message: `${titleData.title} are successfully deleted!`
             })
         }
     })
@@ -126,13 +126,13 @@ router
         let {id} = req.params
         id = parseInt(id)
 
-        let channelData = db.get(id)
+        let titleData = db.get(id)
 
-        if (!channelData) {
+        if (!titleData) {
             channelNotFound(res)
         } else {
             res.status(200).json({
-                message: `${channelData.channelName} are exist`
+                message: `${titleData.title} are exist`
             })
         }
     })
