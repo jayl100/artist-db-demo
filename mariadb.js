@@ -11,7 +11,6 @@ const connection = mysql.createConnection({
 
 
 module.exports = connection;
-//
 
 //
 // // Using placeholders
