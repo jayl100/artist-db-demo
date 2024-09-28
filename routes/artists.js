@@ -1,6 +1,10 @@
 const express = require('express')
 const conn = require('../mariadb')
 const {body, param, validationResult} = require('express-validator')
+const jwt = require('jsonwebtoken')
+const dotenv = require('dotenv')
+
+dotenv.config()
 
 const router = express.Router()
 router.use(express.json())
@@ -68,97 +72,102 @@ router.post('/login',
     body('password').notEmpty().isString().withMessage('password를 입력해주세요.'),
     validate,
     function (req, res) {
-    const {email, password} = req.body;
+        const {email, password} = req.body;
 
-    let sql = `SELECT * FROM artists WHERE email = ?`
+        let sql = `SELECT * FROM artists WHERE email = ?`
 
-    let values = [email]
+        let values = [email]
 
-    conn.query(
-        sql, values,
-        function (err, results) {
-            let loginUser = results[0]
-            if (loginUser) {
-                if (loginUser.password === password) {
+        conn.query(
+            sql, values,
+            function (err, results) {
+                let loginUser = results[0]
+                if (loginUser && loginUser.password === password) {
+                    // 토큰 발급
+                    const token = jwt.sign({
+                        email: loginUser.email,
+                        name: loginUser.name
+                    }, process.env.JWT_SECRET, {
+                        expiresIn: '5m',
+                        issuer: 'ljh',
+                    })
+                    res.cookie("token", token, {httpOnly: true})
+
                     res.status(200).json({
-                        message: `${loginUser.artist} 님 로그인이 완료되었습니다.`
+                        message: `${loginUser.artist} 님 로그인이 완료되었습니다.`,
+                        token: token,
+                    })
+
+                } else if (err) {
+                    console.error(err)
+                    res.status(500).json({
+                        message: 'Something went wrong!'
                     })
                 } else {
-                    res.status(400).json({
-                        message: "로그인이 실패했습니다."
+                    res.status(403).json({
+                        message: "회원 정보가 없습니다."
                     })
                 }
-            } else if (err) {
-                console.error(err)
-                res.status(500).json({
-                    message: 'Something went wrong!'
-                })
-            } else {
-                res.status(404).json({
-                    message: "회원 정보가 없습니다."
-                })
             }
-        }
-    )
-})
+        )
+    })
 
 // 회원 개별 조회 ++++++++++++++++++++++++++++++++++++++++++++++++
 router.get('/artists',
     body('email').notEmpty().isEmail().withMessage('email을 입력해주세요.'),
     validate,
     function (req, res) {
-    let {email} = req.body
+        let {email} = req.body
 
-    let sql = `SELECT * FROM artists WHERE email = ?`
-    let values = [email]
-    conn.query(
-        sql, values,
-        function (err, results) {
-            if (results.length) {
-                res.status(200).json(results)
-            } else if (err) {
-                console.error(err)
-                res.status(500).json({
-                    message: 'Something went wrong!'
-                })
+        let sql = `SELECT * FROM artists WHERE email = ?`
+        let values = [email]
+        conn.query(
+            sql, values,
+            function (err, results) {
+                if (results.length) {
+                    res.status(200).json(results)
+                } else if (err) {
+                    console.error(err)
+                    res.status(500).json({
+                        message: 'Something went wrong!'
+                    })
+                } else {
+                    res.status(404).json({
+                        message: "회원 정보가 없습니다."
+                    })
+                }
             }
-            else {
-                res.status(404).json({
-                    message: "회원 정보가 없습니다."
-                })
-            }
-        }
-    )
-})
+        )
+    })
 
 // 회원 개별 탈퇴 ++++++++++++++++++++++++++++++++++++++++++++++++
 router.delete('/artists',
     body('email').notEmpty().isEmail().withMessage('email을 입력해주세요.'),
     validate,
     function (req, res) {
-    const {email} = req.body
+        const {email} = req.body
 
-    let sql = `DELETE FROM artists WHERE email = ?`
-    let values = [email]
-    conn.query(
-        sql, values,
-        function (err, results) {
-            if (results) {
-                res.status(200).json(results)
-            } else if (err) {
-                console.error(err)
-                res.status(500).json({
-                    message: 'Something went wrong!'
-                })
-            } else {
-                res.status(404).json({
-                    message: "회원 정보가 없습니다."
-                })
+        let sql = `DELETE FROM artists WHERE email = ?`
+        let values = [email]
+        conn.query(
+            sql, values,
+            function (err, results) {
+                if (results) {
+                    res.status(200).json(results)
+                } else if (err) {
+                    console.error(err)
+                    res.status(500).json({
+                        message: 'Something went wrong!'
+                    })
+                } else {
+                    res.status(404).json({
+                        message: "회원 정보가 없습니다."
+                    })
+                }
             }
-        }
-    )
+        )
 
-})
+    })
 
 // 모듈화 ++++++++++++++++++++++++++++++++++++++++++++++++
 module.exports = router
